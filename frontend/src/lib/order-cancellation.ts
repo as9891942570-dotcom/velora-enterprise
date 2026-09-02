@@ -1,0 +1,12 @@
+/** Customer order statuses eligible for cancellation — must match backend CUSTOMER_CANCELLABLE. */
+export const CUSTOMER_CANCELLABLE_STATUSES = ["pending", "confirmed"] as const;
+
+export function canCustomerCancelOrder(
+  status: string,
+  isAuthenticated: boolean,
+): boolean {
+  return (
+    isAuthenticated &&
+    CUSTOMER_CANCELLABLE_STATUSES.includes(status as (typeof CUSTOMER_CANCELLABLE_STATUSES)[number])
+  );
+}

@@ -1,0 +1,86 @@
+﻿
+======================================================================
+SCOPE: ADMIN
+======================================================================
+
+--- PAGE REFRESH: OLD BUGGY INIT ---
+  [JS] document.cookie - hasRefreshCookie() check (client-side)
+    -> returns FALSE - HttpOnly 'admin_refresh_token' exists in browser jar (True) but is invisible to JavaScript
+  [SKIP] /auth/admin/refresh - tryRefresh SKIPPED (OLD bug)
+    -> NO network request - setAccessToken(null); return null
+  [SKIP] /auth/me - /auth/me NOT called (no access token)
+    -> fetchMe skipped because tryRefresh returned null
+  Access token after init: None
+  Refresh cookie in browser: True
+  document.cookie sees refresh: False
+  /auth/me called: NO
+  Explicit logout() called: False
+  Redirect to login: /admin/login (admin/layout.tsx useEffect line ~25)
+
+--- PAGE REFRESH: FIXED INIT ---
+  [POST] /auth/admin/refresh - tryRefresh -> refreshAccessToken -> HTTP 200 (none)
+  [GET] /auth/me - fetchMe after refresh -> HTTP 200 Authorization: Bearer ...
+  Access token after init: present
+  /auth/me status: 200
+  Explicit logout() called: False
+
+--- ORDER API AFTER FIXED INIT ---
+  GET orders -> HTTP 200 (Authorization: True)
+
+======================================================================
+SCOPE: CUSTOMER
+======================================================================
+
+--- PAGE REFRESH: OLD BUGGY INIT ---
+  [JS] document.cookie - hasRefreshCookie() check (client-side)
+    -> returns FALSE - HttpOnly 'refresh_token' exists in browser jar (True) but is invisible to JavaScript
+  [SKIP] /auth/refresh - tryRefresh SKIPPED (OLD bug)
+    -> NO network request - setAccessToken(null); return null
+  [SKIP] /auth/me - /auth/me NOT called (no access token)
+    -> fetchMe skipped because tryRefresh returned null
+  Access token after init: None
+  Refresh cookie in browser: True
+  document.cookie sees refresh: False
+  /auth/me called: NO
+  Explicit logout() called: False
+  Redirect to login: /login?redirect=... (orders/page.tsx line ~24 or checkout line ~55)
+
+--- PAGE REFRESH: FIXED INIT ---
+  [POST] /auth/refresh - tryRefresh -> refreshAccessToken -> HTTP 200 (none)
+  [GET] /auth/me - fetchMe after refresh -> HTTP 200 Authorization: Bearer ...
+  Access token after init: present
+  /auth/me status: 200
+  Explicit logout() called: False
+
+--- ORDER API AFTER FIXED INIT ---
+  GET orders -> HTTP 200 (Authorization: True)
+
+======================================================================
+ROOT CAUSE SUMMARY (evidence-based)
+======================================================================
+python : Traceback (most recent call last):
+At C:\Users\SACHIN\AppData\Local\Temp\ps-script-2f29e77f-48c2-40a8-b07d-0a86ddee2afc.ps1:91 char:77
++ ... enterprise\backend"; python scripts/debug_auth_logout.py 2>&1 | Out-F ...
++                          ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (Traceback (most recent call last)::String) [], RemoteException
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+  File "C:\Users\SACHIN\Documents\velora-enterprise\velora-enterprise\backend\scripts\debug_auth_logout.py", line 286, 
+in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "C:\Users\SACHIN\Documents\velora-enterprise\velora-enterprise\backend\scripts\debug_auth_logout.py", line 239, 
+in main
+        print(
+        ~~~~~^
+            """
+            ^^^
+    ...<39 lines>...
+    """
+    ^^^
+        )
+        ^
+  File "C:\Users\SACHIN\AppData\Local\Programs\Python\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2192' in position 1561: character maps to <undefined>
