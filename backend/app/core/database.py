@@ -16,10 +16,9 @@ class Base(DeclarativeBase):
 
 database_url = settings.database_url
 
-# Remove sslmode because asyncpg doesn't support it
-if database_url.startswith("postgresql+asyncpg://") and "sslmode=" in database_url:
-    database_url = database_url.replace("?sslmode=require", "")
-    database_url = database_url.replace("&sslmode=require", "")
+# Convert/remove sslmode query parameter for asyncpg
+database_url = database_url.replace("?sslmode=require", "")
+database_url = database_url.replace("&sslmode=require", "")
 
 
 engine = create_async_engine(
