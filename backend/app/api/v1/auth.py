@@ -16,9 +16,16 @@ from app.core.security import (
 from app.models.enums import UserRole
 from app.models.refresh_token import RefreshToken
 from app.models.user import User
-from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserResponse
+from app.schemas.auth import (
+    ForgotPasswordRequest,
+    LoginRequest,
+    RegisterRequest,
+    ResetPasswordRequest,
+    TokenResponse,
+    UserResponse,
+)
 from app.schemas.common import MessageResponse
-from app.services import cart_service
+from app.services import cart_service, password_reset_service
 from app.utils.auth_cookies import (
     ADMIN_REFRESH_COOKIE_NAME,
     REFRESH_COOKIE_NAME,
@@ -249,3 +256,55 @@ async def admin_logout(
 @router.get("/me", response_model=UserResponse)
 async def get_me(user: User = Depends(get_current_user)) -> User:
     return user
+
+
+@router.post("/forgot-password", response_model=MessageResponse)
+async def forgot_password(
+    body: ForgotPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+) -> MessageResponse:
+    message = await password_reset_service.request_password_reset(
+        db, email=str(body.email), scope="customer"
+    )
+    return MessageResponse(message=message)
+
+
+@router.post("/reset-password", response_model=MessageResponse)
+async def reset_password(
+    body: ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+) -> MessageResponse:
+    message = await password_reset_service.reset_password(
+        db,
+        token=body.token,
+        password=body.password,
+        confirm_password=body.confirm_password,
+        scope="customer",
+    )
+    return MessageResponse(message=message)
+
+
+@router.post("/admin/forgot-password", response_model=MessageResponse)
+async def admin_forgot_password(
+    body: ForgotPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+) -> MessageResponse:
+    message = await password_reset_service.request_password_reset(
+        db, email=str(body.email), scope="admin"
+    )
+    return MessageResponse(message=message)
+
+
+@router.post("/admin/reset-password", response_model=MessageResponse)
+async def admin_reset_password(
+    body: ResetPasswordRequest,
+    db: AsyncSession = Depends(get_db),
+) -> MessageResponse:
+    message = await password_reset_service.reset_password(
+        db,
+        token=body.token,
+        password=body.password,
+        confirm_password=body.confirm_password,
+        scope="admin",
+    )
+    return MessageResponse(message=message)

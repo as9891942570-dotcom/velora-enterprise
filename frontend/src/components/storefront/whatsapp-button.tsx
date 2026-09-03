@@ -7,14 +7,16 @@ interface WhatsAppButtonProps {
   className?: string;
   variant?: "inline" | "floating";
   label?: string;
+  message?: string;
 }
 
 export function WhatsAppButton({
   className,
   variant = "inline",
   label = "Chat on WhatsApp",
+  message,
 }: WhatsAppButtonProps) {
-  const url = getWhatsAppUrl();
+  const url = getWhatsAppUrl(message);
   if (!url) return null;
 
   if (variant === "floating") {

@@ -8,6 +8,7 @@ import { useEffect, useState } from "react";
 import { OrderTracker } from "@/components/orders/order-tracker";
 import { CustomerOrderCancelSection } from "@/components/orders/customer-order-cancel-section";
 import { OrderReviewSection } from "@/components/orders/order-review-section";
+import { OrderSupportCard } from "@/components/orders/order-support-card";
 import { BackLink } from "@/components/layout/back-link";
 import { LoadingSpinner } from "@/components/storefront/loading-spinner";
 import { Button } from "@/components/ui/button";
@@ -266,6 +267,8 @@ export default function OrderDetailContent({ orderNumber }: { orderNumber: strin
               </dl>
             </div>
           )}
+
+          <OrderSupportCard orderNumber={order.order_number} />
         </div>
       </div>
     </div>

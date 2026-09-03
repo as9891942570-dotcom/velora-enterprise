@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request, Response, status
+from fastapi import APIRouter, BackgroundTasks, Depends, Request, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.deps import get_cart_session_id, get_current_user, get_db, require_customer
@@ -12,6 +12,7 @@ from app.schemas.order import (
     PaymentVerifyRequest,
 )
 from app.services import cart_service, checkout_service
+from app.services.order_email_tasks import send_order_placed_emails
 
 router = APIRouter()
 
@@ -58,11 +59,14 @@ async def create_order(
     body: CheckoutRequest,
     request: Request,
     response: Response,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     user: User = Depends(require_customer),
 ) -> OrderCreateResponse:
     cart = await _resolve_cart(db, request, response, user)
-    return await checkout_service.create_order(db, cart, body, user)
+    order_response = await checkout_service.create_order(db, cart, body, user)
+    background_tasks.add_task(send_order_placed_emails, order_response.id)
+    return order_response
 
 
 @router.post("/verify-payment", response_model=OrderResponse)

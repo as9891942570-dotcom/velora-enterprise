@@ -3,10 +3,10 @@
 import { useState } from "react";
 import { CheckCircle } from "lucide-react";
 
+import { ContactInfoCard } from "@/components/layout/contact-info-card";
 import { WhatsAppButton } from "@/components/storefront/whatsapp-button";
 import { Button } from "@/components/ui/button";
 import { ApiRequestError, apiFetch } from "@/lib/api";
-import { SUPPORT_EMAIL } from "@/lib/config";
 import type { MessageResponse } from "@/lib/types";
 
 export default function ContactPage() {
@@ -55,15 +55,10 @@ export default function ContactPage() {
         Have a question? We&apos;d love to hear from you.
       </p>
 
-      <div className="mt-6 space-y-3 rounded-xl border border-border bg-card p-4 text-sm">
-        <p>
-          Email:{" "}
-          <a href={`mailto:${SUPPORT_EMAIL}`} className="font-medium hover:underline">
-            {SUPPORT_EMAIL}
-          </a>
-        </p>
-        <p className="text-muted-foreground">Mon–Sat, 10am–6pm IST</p>
-        <WhatsAppButton />
+      <ContactInfoCard className="mt-6" title="CONTACT" />
+
+      <div className="mt-4">
+        <WhatsAppButton label="Chat on WhatsApp" />
       </div>
 
       <form onSubmit={handleSubmit} className="mt-8 space-y-4">

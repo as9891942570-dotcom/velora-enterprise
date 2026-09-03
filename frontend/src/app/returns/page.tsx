@@ -1,3 +1,5 @@
+import { SUPPORT_EMAIL, SUPPORT_PHONE } from "@/lib/config";
+
 function LegalLayout({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="mx-auto max-w-3xl px-4 py-16 sm:px-6 lg:px-8">
@@ -19,7 +21,13 @@ export default function ReturnsPage() {
       </p>
       <h2 className="font-heading text-lg font-semibold text-foreground">How to Return</h2>
       <ol className="list-decimal space-y-2 pl-5">
-        <li>Contact us at support@velora.com with your order number</li>
+        <li>
+          Contact us at{" "}
+          <a href={`mailto:${SUPPORT_EMAIL}`} className="text-foreground hover:underline">
+            {SUPPORT_EMAIL}
+          </a>{" "}
+          or call {SUPPORT_PHONE} with your order number
+        </li>
         <li>We will provide a return authorization and shipping instructions</li>
         <li>Pack the item securely in its original packaging</li>
         <li>Ship the item back using the provided label or courier details</li>

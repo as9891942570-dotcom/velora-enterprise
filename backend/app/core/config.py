@@ -14,7 +14,20 @@ class Settings(BaseSettings):
     secret_key: str = "change-me-in-production"
     cors_origins: str = "http://localhost:3000,http://127.0.0.1:3000"
     frontend_url: str = "http://localhost:3000"
-    support_email: str = "support@veloraenterprise.com"
+    support_email: str = "veloraenterprise2@gmail.com"
+    admin_notification_email: str = "veloraenterprise2@gmail.com"
+
+    # SMTP (optional — emails skipped when not configured)
+    smtp_host: str = ""
+    smtp_port: int = 587
+    smtp_username: str = ""
+    smtp_password: str = ""
+    smtp_from_email: str = ""
+    smtp_from_name: str = "Velora Enterprise"
+    smtp_use_tls: bool = True
+
+    # Password reset
+    password_reset_expire_minutes: int = 60
 
     # JWT
     access_token_expire_minutes: int = 30
@@ -53,6 +66,14 @@ class Settings(BaseSettings):
     @property
     def cloudinary_enabled(self) -> bool:
         return bool(self.cloudinary_cloud_name and self.cloudinary_api_key and self.cloudinary_api_secret)
+
+    @property
+    def smtp_enabled(self) -> bool:
+        return bool(self.smtp_host and self.smtp_from_email)
+
+    @property
+    def effective_from_email(self) -> str:
+        return self.smtp_from_email or self.support_email
 
 
 settings = Settings()

@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { PasswordInput } from "@/components/ui/password-input";
 import { LoadingSpinner } from "@/components/storefront/loading-spinner";
 import { ApiRequestError } from "@/lib/api";
 import { getSafeRedirect } from "@/lib/auth-redirect";
@@ -83,16 +84,14 @@ function RegisterForm() {
           <label htmlFor="register-password" className="mb-1.5 block text-sm font-medium">
             Password
           </label>
-          <input
+          <PasswordInput
             id="register-password"
             name="register-password"
-            type="password"
             required
             minLength={8}
             autoComplete="new-password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className={inputClass}
           />
           <p className="mt-1 text-xs text-muted-foreground">Minimum 8 characters</p>
         </div>

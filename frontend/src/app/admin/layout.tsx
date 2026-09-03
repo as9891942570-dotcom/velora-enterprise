@@ -13,9 +13,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const { isAdmin, isLoading, isAuthenticated } = useAdminAuth();
 
   const isLoginPage = pathname === "/admin/login";
+  const isPublicAdminAuthPage =
+    isLoginPage ||
+    pathname === "/admin/forgot-password" ||
+    pathname === "/admin/reset-password";
 
   useEffect(() => {
-    if (isLoginPage || isLoading) return;
+    if (isPublicAdminAuthPage || isLoading) return;
 
     if (!isAuthenticated) {
       const redirect =
@@ -29,9 +33,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (!isAdmin) {
       router.replace("/?error=admin_access_denied");
     }
-  }, [isAdmin, isLoading, isAuthenticated, isLoginPage, pathname, router]);
+  }, [isAdmin, isLoading, isAuthenticated, isPublicAdminAuthPage, pathname, router]);
 
-  if (isLoginPage) {
+  if (isPublicAdminAuthPage) {
     return <>{children}</>;
   }
 
