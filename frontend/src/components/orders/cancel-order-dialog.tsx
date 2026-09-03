@@ -107,7 +107,7 @@ export function CancelOrderDialog({
             Go Back
           </Button>
           <Button variant="destructive" onClick={handleConfirm} disabled={loading}>
-            {loading ? "Cancelling..." : "Confirm Cancellation"}
+            {loading ? "Submitting..." : "Confirm"}
           </Button>
         </div>
       </div>

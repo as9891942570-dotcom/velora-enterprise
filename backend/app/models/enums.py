@@ -19,8 +19,15 @@ class OrderStatus(str, enum.Enum):
     SHIPPED = "shipped"
     OUT_FOR_DELIVERY = "out_for_delivery"
     DELIVERED = "delivered"
+    CANCELLATION_REQUESTED = "cancellation_requested"
     CANCELLED = "cancelled"
     RETURNED = "returned"
+
+
+class CancellationDecision(str, enum.Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
 
 
 class PaymentStatus(str, enum.Enum):

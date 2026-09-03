@@ -14,7 +14,7 @@ import {
 import { StatCard } from "@/components/admin/stat-card";
 import { LoadingSpinner } from "@/components/storefront/loading-spinner";
 import { ButtonLink } from "@/components/ui/button-link";
-import { apiFetch } from "@/lib/api";
+import { ApiRequestError, apiFetch } from "@/lib/api";
 import { useAdminAuth } from "@/lib/auth-context";
 import { formatDateShort, formatINR, formatStatus } from "@/lib/format";
 import type { DashboardStats } from "@/lib/types";
@@ -23,23 +23,41 @@ export default function AdminDashboardPage() {
   const { isLoading: authLoading, isAuthenticated } = useAdminAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     if (authLoading) return;
     if (!isAuthenticated) {
       setLoading(false);
+      setError("Not authenticated");
       return;
     }
 
     setLoading(true);
+    setError("");
     apiFetch<DashboardStats>("/admin/dashboard/stats", { auth: true, authScope: "admin" })
       .then(setStats)
-      .catch(() => setStats(null))
+      .catch((err) => {
+        setStats(null);
+        setError(err instanceof ApiRequestError ? err.detail : "Failed to load dashboard");
+      })
       .finally(() => setLoading(false));
   }, [authLoading, isAuthenticated]);
 
   if (authLoading || loading) return <LoadingSpinner />;
-  if (!stats) return <p className="text-destructive">Failed to load dashboard</p>;
+  if (!stats) {
+    return (
+      <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-6">
+        <p className="font-medium text-destructive">Failed to load dashboard</p>
+        <p className="mt-2 text-sm text-muted-foreground">{error || "Unknown error"}</p>
+        {process.env.NODE_ENV === "development" && (
+          <p className="mt-2 font-mono text-xs text-muted-foreground">
+            GET /admin/dashboard/stats · check backend logs and alembic migrations
+          </p>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div>

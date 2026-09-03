@@ -16,7 +16,6 @@ interface CustomerOrderCancelSectionProps {
   order: Order;
   orderNumber: string;
   onOrderUpdated: (order: Order) => void;
-  /** When true, show a prominent call-to-action banner (above the fold). */
   prominent?: boolean;
 }
 
@@ -31,14 +30,14 @@ export function CustomerOrderCancelSection({
   const [cancelling, setCancelling] = useState(false);
   const [error, setError] = useState("");
 
-  const canCancel = canCustomerCancelOrder(order.status, isAuthenticated);
+  const canRequest = canCustomerCancelOrder(order.status, isAuthenticated);
 
-  async function handleCancel(reason: string) {
+  async function handleRequest(reason: string) {
     if (!isAuthenticated) return;
     setCancelling(true);
     setError("");
     try {
-      const updated = await apiFetch<Order>(`/orders/${orderNumber}/cancel`, {
+      const updated = await apiFetch<Order>(`/orders/${orderNumber}/cancel-request`, {
         method: "POST",
         body: { reason },
         auth: true,
@@ -46,7 +45,7 @@ export function CustomerOrderCancelSection({
       onOrderUpdated(updated);
       setShowCancelDialog(false);
     } catch (err) {
-      setError(err instanceof ApiRequestError ? err.detail : "Failed to cancel order");
+      setError(err instanceof ApiRequestError ? err.detail : "Failed to request cancellation");
     } finally {
       setCancelling(false);
     }
@@ -56,7 +55,7 @@ export function CustomerOrderCancelSection({
     <>
       <CancellationInfo order={order} />
 
-      {canCancel && (
+      {canRequest && (
         <div
           className={
             prominent
@@ -66,9 +65,10 @@ export function CustomerOrderCancelSection({
         >
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="font-heading font-semibold text-foreground">Cancel this order</p>
+              <p className="font-heading font-semibold text-foreground">Cancel Order</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                You can cancel while your order is pending or confirmed. A reason is required.
+                You can request cancellation while the order is pending or confirmed.
+                An admin will review your request before the order is cancelled.
               </p>
             </div>
             <Button
@@ -78,7 +78,7 @@ export function CustomerOrderCancelSection({
               disabled={cancelling}
             >
               <XCircle className="mr-2 size-4" />
-              {cancelling ? "Cancelling..." : "Cancel Order"}
+              {cancelling ? "Submitting..." : "Cancel Order"}
             </Button>
           </div>
           {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
@@ -87,9 +87,10 @@ export function CustomerOrderCancelSection({
 
       <CancelOrderDialog
         open={showCancelDialog}
+        title="Cancel Order"
         reasons={CUSTOMER_CANCELLATION_REASONS}
         loading={cancelling}
-        onConfirm={handleCancel}
+        onConfirm={handleRequest}
         onCancel={() => {
           setShowCancelDialog(false);
           setError("");

@@ -6,6 +6,7 @@ from app.models.order import Order, OrderItem, OrderStatusHistory
 from app.models.payment import Payment
 from app.models.product import Product, ProductImage
 from app.models.refresh_token import RefreshToken
+from app.models.review import ProductReview
 from app.models.user import User
 
 __all__ = [
@@ -20,6 +21,7 @@ __all__ = [
     "Payment",
     "Product",
     "ProductImage",
+    "ProductReview",
     "RefreshToken",
     "User",
 ]

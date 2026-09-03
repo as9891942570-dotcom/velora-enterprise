@@ -60,6 +60,7 @@ async def get_order(order_id: uuid.UUID, db: AsyncSession = Depends(get_db)) -> 
     order = await order_service.fetch_order_by_id(db, order_id)
     if not order:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+    order = await order_service.mark_order_seen(db, order)
     return order_service.build_order_response(order)
 
 

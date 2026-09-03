@@ -6,15 +6,19 @@ from sqlalchemy.orm import selectinload
 
 from app.core.config import settings
 from app.models.category import Category
-from app.models.enums import OrderStatus, UserRole
+from app.models.enums import OrderStatus, PaymentStatus, UserRole
 from app.models.order import Order
 from app.models.product import Product
 from app.models.user import User
 from app.schemas.dashboard import DashboardStatsResponse, InventorySummary, LowStockProduct
 from app.services.order_service import build_order_response
 
-VALID_REVENUE_STATUSES = [OrderStatus.CANCELLED, OrderStatus.RETURNED]
-PENDING_STATUSES = [OrderStatus.PENDING, OrderStatus.CONFIRMED, OrderStatus.PROCESSING]
+PENDING_STATUSES = [
+    OrderStatus.PENDING,
+    OrderStatus.CONFIRMED,
+    OrderStatus.PROCESSING,
+    OrderStatus.CANCELLATION_REQUESTED,
+]
 
 
 def _month_start(now: datetime) -> datetime:
@@ -25,9 +29,10 @@ def _day_start(now: datetime) -> datetime:
     return now.replace(hour=0, minute=0, second=0, microsecond=0)
 
 
-async def _sum_revenue(db: AsyncSession, *, since: datetime | None = None) -> float:
+async def _sum_paid_revenue(db: AsyncSession, *, since: datetime | None = None) -> float:
+    """Revenue counts only orders with a genuine paid payment status."""
     query = select(func.coalesce(func.sum(Order.total_amount), 0)).where(
-        Order.status.not_in(VALID_REVENUE_STATUSES)
+        Order.payment_status == PaymentStatus.PAID
     )
     if since:
         query = query.where(Order.created_at >= since)
@@ -59,9 +64,9 @@ async def get_dashboard_stats(db: AsyncSession) -> DashboardStatsResponse:
         await db.execute(select(func.count(Order.id)).where(Order.status.in_(PENDING_STATUSES)))
     ).scalar_one()
 
-    total_revenue = await _sum_revenue(db)
-    revenue_today = await _sum_revenue(db, since=day_start)
-    revenue_this_month = await _sum_revenue(db, since=month_start)
+    total_revenue = await _sum_paid_revenue(db)
+    revenue_today = await _sum_paid_revenue(db, since=day_start)
+    revenue_this_month = await _sum_paid_revenue(db, since=month_start)
     orders_today = await _count_orders(db, since=day_start)
     orders_this_month = await _count_orders(db, since=month_start)
 

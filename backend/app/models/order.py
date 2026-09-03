@@ -2,12 +2,12 @@ import uuid
 from datetime import datetime
 from decimal import Decimal
 
-from sqlalchemy import DateTime, Enum, ForeignKey, Integer, Numeric, String, Text, func
+from sqlalchemy import Boolean, DateTime, Enum, ForeignKey, Integer, Numeric, String, Text, func
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
-from app.models.enums import CancelledByRole, OrderStatus, PaymentMethod, PaymentStatus
+from app.models.enums import CancellationDecision, CancelledByRole, OrderStatus, PaymentMethod, PaymentStatus
 
 
 class Order(Base):
@@ -57,6 +57,23 @@ class Order(Base):
     status_before_cancel: Mapped[OrderStatus | None] = mapped_column(
         Enum(OrderStatus, name="order_status", create_type=False), nullable=True
     )
+    cancellation_requested_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    cancellation_reviewed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    cancellation_reviewed_by_user_id: Mapped[uuid.UUID | None] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("users.id", ondelete="SET NULL"), nullable=True
+    )
+    cancellation_admin_note: Mapped[str | None] = mapped_column(Text, nullable=True)
+    cancellation_decision: Mapped[CancellationDecision | None] = mapped_column(
+        Enum(
+            CancellationDecision,
+            name="cancellation_decision",
+            values_callable=lambda enum: [member.value for member in enum],
+        ),
+        nullable=True,
+        index=True,
+    )
+    admin_seen_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True, index=True)
+    stock_restored: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False

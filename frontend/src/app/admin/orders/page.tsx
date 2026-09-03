@@ -17,6 +17,7 @@ const STATUS_OPTIONS: { value: string; label: string }[] = [
   { value: "shipped", label: "Shipped" },
   { value: "out_for_delivery", label: "Out for Delivery" },
   { value: "delivered", label: "Delivered" },
+  { value: "cancellation_requested", label: "Cancellation Requested" },
   { value: "cancelled", label: "Cancelled" },
   { value: "returned", label: "Returned" },
 ];
@@ -49,6 +50,7 @@ export default function AdminOrdersPage() {
       out_for_delivery: "text-orange-700 dark:text-orange-300",
       delivered: "text-green-700 dark:text-green-300",
       cancelled: "text-red-700 dark:text-red-300",
+      cancellation_requested: "text-amber-700 dark:text-amber-300",
     };
     return colors[status] ?? "";
   }

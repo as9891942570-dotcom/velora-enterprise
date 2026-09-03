@@ -1,4 +1,4 @@
-/** Customer order statuses eligible for cancellation — must match backend CUSTOMER_CANCELLABLE. */
+/** Customer statuses eligible to REQUEST cancellation — matches backend CUSTOMER_CANCELLABLE. */
 export const CUSTOMER_CANCELLABLE_STATUSES = ["pending", "confirmed"] as const;
 
 export function canCustomerCancelOrder(

@@ -40,9 +40,14 @@ export function OrderTracker({ status }: { status: OrderStatus }) {
           </span>
           Status: Cancelled
         </div>
-        <p className="text-xs text-muted-foreground">
-          This order is no longer being processed. See cancellation details above.
-        </p>
+      </div>
+    );
+  }
+
+  if (status === "cancellation_requested") {
+    return (
+      <div className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100">
+        Cancellation requested. Waiting for store approval.
       </div>
     );
   }

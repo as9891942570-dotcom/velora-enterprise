@@ -42,3 +42,7 @@ def test_full_forward_workflow_chain():
 
 def test_processing_cannot_be_cancelled_by_admin():
     assert OrderStatus.CANCELLED not in ADMIN_TRANSITIONS[OrderStatus.PROCESSING]
+
+
+def test_cancellation_requested_can_be_approved_to_cancelled():
+    assert OrderStatus.CANCELLED in ADMIN_TRANSITIONS[OrderStatus.CANCELLATION_REQUESTED]

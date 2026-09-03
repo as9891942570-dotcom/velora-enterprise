@@ -65,9 +65,11 @@ async def razorpay_webhook(request: Request, db: AsyncSession = Depends(get_db))
         payment.status = PaymentRecordStatus.FAILED
         order.payment_status = PaymentStatus.FAILED
         if order.status == OrderStatus.PENDING:
-            for item in order.items:
-                if item.product_id and item.quantity > 0:
-                    await inventory_service.restore_stock(db, item.product_id, item.quantity)
+            if not order.stock_restored:
+                for item in order.items:
+                    if item.product_id and item.quantity > 0:
+                        await inventory_service.restore_stock(db, item.product_id, item.quantity)
+                order.stock_restored = True
             order.status = OrderStatus.CANCELLED
             db.add(
                 OrderStatusHistory(

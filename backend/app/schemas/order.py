@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
-from app.models.enums import CancelledByRole, OrderStatus, PaymentMethod, PaymentRecordStatus, PaymentStatus
+from app.models.enums import CancellationDecision, CancelledByRole, OrderStatus, PaymentMethod, PaymentRecordStatus, PaymentStatus
 from app.schemas.address import validate_indian_phone
 
 
@@ -114,6 +114,10 @@ class OrderResponse(BaseModel):
     cancelled_by_role: CancelledByRole | None = None
     cancellation_reason: str | None = None
     status_before_cancel: OrderStatus | None = None
+    cancellation_requested_at: datetime | None = None
+    cancellation_reviewed_at: datetime | None = None
+    cancellation_admin_note: str | None = None
+    cancellation_decision: CancellationDecision | None = None
     payment: OrderPaymentInfo | None = None
     items: list[OrderItemResponse]
     status_history: list[OrderStatusHistoryResponse] = Field(default_factory=list)
@@ -169,3 +173,7 @@ class OrderStatusUpdate(BaseModel):
 
 class OrderCancelRequest(BaseModel):
     reason: str = Field(min_length=1, max_length=1000)
+
+
+class CancellationDecisionRequest(BaseModel):
+    note: str | None = Field(None, max_length=1000)

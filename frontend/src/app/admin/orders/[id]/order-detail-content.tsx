@@ -10,7 +10,7 @@ import { CancellationInfo } from "@/components/orders/cancellation-info";
 import { LoadingSpinner } from "@/components/storefront/loading-spinner";
 import { Button } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { ApiRequestError, apiFetch } from "@/lib/api";
+import { ApiRequestError, apiFetch, notifyAdminNotificationsChanged } from "@/lib/api";
 import { ADMIN_CANCELLATION_REASONS } from "@/lib/cancellation-reasons";
 import { formatDate, formatINR, formatStatus } from "@/lib/format";
 import { resolveImageUrl } from "@/lib/image-url";
@@ -36,6 +36,7 @@ function StatusBadge({ status }: { status: OrderStatus }) {
     out_for_delivery: "bg-orange-100 text-orange-900 dark:bg-orange-950 dark:text-orange-200",
     delivered: "bg-green-100 text-green-900 dark:bg-green-950 dark:text-green-200",
     cancelled: "bg-red-100 text-red-900 dark:bg-red-950 dark:text-red-200",
+    cancellation_requested: "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200",
   };
   return (
     <span
@@ -68,7 +69,10 @@ export default function AdminOrderDetailContent({ orderId }: { orderId: string }
 
   useEffect(() => {
     apiFetch<Order>(`/admin/orders/${orderId}`, { auth: true })
-      .then(setOrder)
+      .then((data) => {
+        setOrder(data);
+        notifyAdminNotificationsChanged();
+      })
       .catch(() => setOrder(null))
       .finally(() => setLoading(false));
   }, [orderId]);
@@ -117,6 +121,49 @@ export default function AdminOrderDetailContent({ orderId }: { orderId: string }
 
   async function handleAdminCancel(reason: string) {
     await updateStatus("cancelled", reason, { cancellation_reason: reason });
+  }
+
+  async function handleApproveRequest() {
+    if (!order) return;
+    setUpdating(true);
+    setError("");
+    setSuccess("");
+    try {
+      const updated = await apiFetch<Order>(`/admin/cancellation-requests/${order.id}/approve`, {
+        method: "POST",
+        body: { note: null },
+        auth: true,
+      });
+      setOrder(updated);
+      notifyAdminNotificationsChanged();
+      setSuccess("Cancellation request approved. Order is now cancelled.");
+    } catch (err) {
+      setError(err instanceof ApiRequestError ? err.detail : "Failed to approve cancellation");
+    } finally {
+      setUpdating(false);
+    }
+  }
+
+  async function handleRejectRequest() {
+    if (!order) return;
+    const note = window.prompt("Optional note for the customer (why the request was rejected):") ?? "";
+    setUpdating(true);
+    setError("");
+    setSuccess("");
+    try {
+      const updated = await apiFetch<Order>(`/admin/cancellation-requests/${order.id}/reject`, {
+        method: "POST",
+        body: { note: note.trim() || null },
+        auth: true,
+      });
+      setOrder(updated);
+      notifyAdminNotificationsChanged();
+      setSuccess("Cancellation request rejected. Order restored to previous status.");
+    } catch (err) {
+      setError(err instanceof ApiRequestError ? err.detail : "Failed to reject cancellation");
+    } finally {
+      setUpdating(false);
+    }
   }
 
   async function handleConfirmAction() {
@@ -343,6 +390,22 @@ export default function AdminOrderDetailContent({ orderId }: { orderId: string }
               </p>
             )}
 
+            {order.status === "cancellation_requested" && (
+              <div className="mt-4 space-y-4">
+                <p className="text-sm text-muted-foreground">
+                  The customer requested cancellation. Reason: {order.cancellation_reason}
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <Button onClick={handleApproveRequest} disabled={updating}>
+                    Approve Cancellation
+                  </Button>
+                  <Button variant="outline" onClick={handleRejectRequest} disabled={updating}>
+                    Reject Request
+                  </Button>
+                </div>
+              </div>
+            )}
+
             {order.status === "cancelled" && (
               <p className="mt-4 text-sm text-muted-foreground">
                 This order has been cancelled. See cancellation details below.
@@ -350,7 +413,9 @@ export default function AdminOrderDetailContent({ orderId }: { orderId: string }
             )}
           </section>
 
-          {order.status === "cancelled" && <CancellationInfo order={order} />}
+          {(order.status === "cancelled" ||
+            order.status === "cancellation_requested" ||
+            order.cancellation_decision === "rejected") && <CancellationInfo order={order} />}
         </div>
 
         <div className="space-y-6">

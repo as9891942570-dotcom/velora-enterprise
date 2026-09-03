@@ -7,6 +7,7 @@ export type OrderStatus =
   | "shipped"
   | "out_for_delivery"
   | "delivered"
+  | "cancellation_requested"
   | "cancelled"
   | "returned";
 
@@ -232,6 +233,10 @@ export interface Order {
   cancelled_by_role?: "customer" | "admin" | "system" | null;
   cancellation_reason?: string | null;
   status_before_cancel?: OrderStatus | null;
+  cancellation_requested_at?: string | null;
+  cancellation_reviewed_at?: string | null;
+  cancellation_admin_note?: string | null;
+  cancellation_decision?: "pending" | "approved" | "rejected" | null;
   payment?: OrderPaymentInfo | null;
   items: OrderItem[];
   status_history?: OrderStatusHistoryEntry[];
@@ -350,6 +355,78 @@ export interface OrderStatusUpdate {
 
 export interface OrderCancelRequest {
   reason: string;
+}
+
+export interface ProductReview {
+  id: string;
+  user_id: string;
+  product_id: string;
+  order_id: string;
+  rating: number;
+  comment: string;
+  admin_reply: string | null;
+  is_read: boolean;
+  is_hidden: boolean;
+  created_at: string;
+  updated_at: string;
+  customer_name?: string | null;
+  product_name?: string | null;
+  product_slug?: string | null;
+  order_number?: string | null;
+}
+
+export interface ReviewEligibilityItem {
+  product_id: string;
+  product_name: string;
+  product_slug: string;
+  eligible: boolean;
+  existing_review_id: string | null;
+  reason: string | null;
+}
+
+export interface ReviewEligibility {
+  order_id: string;
+  order_status: string;
+  items: ReviewEligibilityItem[];
+}
+
+export interface PaymentListItem {
+  order_id: string;
+  order_number: string;
+  customer_name: string;
+  customer_email: string;
+  total_amount: string;
+  payment_method: PaymentMethod;
+  payment_status: PaymentStatus;
+  order_status: OrderStatus;
+  transaction_id: string | null;
+  razorpay_order_id: string | null;
+  payment_record_status: string | null;
+  created_at: string;
+}
+
+export interface PaymentSummary {
+  total_revenue: string;
+  successful_payments: number;
+  pending_payments: number;
+  failed_payments: number;
+  refunded_amount: string;
+}
+
+export interface PaymentListResponse {
+  items: PaymentListItem[];
+  total: number;
+  page: number;
+  page_size: number;
+  pages: number;
+  summary: PaymentSummary;
+}
+
+export interface AdminNotificationCounts {
+  new_orders: number;
+  unread_reviews: number;
+  pending_cancellations: number;
+  unread_messages: number;
 }
 
 export interface CloudinarySignResponse {

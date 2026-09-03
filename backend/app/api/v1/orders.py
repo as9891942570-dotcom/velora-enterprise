@@ -46,6 +46,18 @@ async def get_order(
     return order_service.build_order_response(order)
 
 
+@router.post("/{order_number}/cancel-request", response_model=OrderResponse)
+async def request_cancellation(
+    order_number: str,
+    body: OrderCancelRequest,
+    db: AsyncSession = Depends(get_db),
+    user: User = Depends(get_current_user),
+) -> OrderResponse:
+    order = await order_service.get_order_by_number(db, order_number, user_id=user.id)
+    updated = await order_service.request_cancellation(db, order, user.id, body.reason)
+    return order_service.build_order_response(updated)
+
+
 @router.post("/{order_number}/cancel", response_model=OrderResponse)
 async def cancel_order(
     order_number: str,
@@ -53,6 +65,7 @@ async def cancel_order(
     db: AsyncSession = Depends(get_db),
     user: User = Depends(get_current_user),
 ) -> OrderResponse:
+    """Alias: customers request cancellation; they cannot cancel directly."""
     order = await order_service.get_order_by_number(db, order_number, user_id=user.id)
-    updated = await order_service.cancel_order_by_customer(db, order, user.id, body.reason)
+    updated = await order_service.request_cancellation(db, order, user.id, body.reason)
     return order_service.build_order_response(updated)

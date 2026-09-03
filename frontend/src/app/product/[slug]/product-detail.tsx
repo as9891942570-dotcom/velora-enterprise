@@ -13,6 +13,7 @@ import { useAuth } from "@/lib/auth-context";
 import { formatINR } from "@/lib/format";
 import { resolveImageUrl } from "@/lib/image-url";
 import type { Cart, Product } from "@/lib/types";
+import { ProductReviews } from "@/components/storefront/product-reviews";
 
 export function ProductDetailClient({ product }: { product: Product }) {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -164,6 +165,8 @@ export function ProductDetailClient({ product }: { product: Product }) {
           )}
         </div>
       </div>
+
+      <ProductReviews productId={product.id} />
     </div>
   );
 }

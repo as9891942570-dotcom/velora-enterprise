@@ -201,3 +201,10 @@ export function buildQuery(
   const qs = search.toString();
   return qs ? `?${qs}` : "";
 }
+
+export const ADMIN_NOTIFICATIONS_CHANGED = "admin-notifications-changed";
+
+export function notifyAdminNotificationsChanged(): void {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(ADMIN_NOTIFICATIONS_CHANGED));
+}

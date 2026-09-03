@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 import { LoadingSpinner } from "@/components/storefront/loading-spinner";
 import { Button } from "@/components/ui/button";
-import { apiFetch, buildQuery } from "@/lib/api";
+import { apiFetch, buildQuery, notifyAdminNotificationsChanged } from "@/lib/api";
 import { formatDateShort } from "@/lib/format";
 import type { ContactMessage, PaginatedResponse } from "@/lib/types";
 
@@ -31,6 +31,7 @@ export default function AdminMessagesPage() {
       setMessages((prev) =>
         prev.map((m) => (m.id === id ? { ...m, status: message.status } : m)),
       );
+      notifyAdminNotificationsChanged();
     } catch {
       // ignore
     }
@@ -46,6 +47,7 @@ export default function AdminMessagesPage() {
       );
       setSelected(updated);
       setMessages((prev) => prev.map((m) => (m.id === updated.id ? updated : m)));
+      notifyAdminNotificationsChanged();
     } finally {
       setUpdating(false);
     }

@@ -37,6 +37,7 @@ class Product(Base):
     )
     cart_items: Mapped[list["CartItem"]] = relationship(back_populates="product")
     order_items: Mapped[list["OrderItem"]] = relationship(back_populates="product")
+    reviews: Mapped[list["ProductReview"]] = relationship(back_populates="product")
 
 
 class ProductImage(Base):
