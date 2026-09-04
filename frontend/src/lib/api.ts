@@ -17,14 +17,24 @@ const refreshPromises: Record<AuthScope, Promise<string | null> | null> = {
 
 type CartListener = () => void;
 const cartListeners = new Set<CartListener>();
+let cartNotifyTimer: ReturnType<typeof setTimeout> | null = null;
 
 export function subscribeCart(listener: CartListener): () => void {
   cartListeners.add(listener);
   return () => cartListeners.delete(listener);
 }
 
+/** Debounced so login merge + isAuthenticated flip don't stampede listeners. */
 export function notifyCartChanged(): void {
-  cartListeners.forEach((listener) => listener());
+  if (typeof window === "undefined") {
+    cartListeners.forEach((listener) => listener());
+    return;
+  }
+  if (cartNotifyTimer) clearTimeout(cartNotifyTimer);
+  cartNotifyTimer = setTimeout(() => {
+    cartNotifyTimer = null;
+    cartListeners.forEach((listener) => listener());
+  }, 75);
 }
 
 export function setAccessToken(token: string | null, scope: AuthScope = "customer"): void {

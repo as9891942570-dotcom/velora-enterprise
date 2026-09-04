@@ -1,16 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Menu, ShoppingBag, User, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ButtonLink } from "@/components/ui/button-link";
-import { apiFetch, subscribeCart } from "@/lib/api";
-import { syncGuestCartToServer } from "@/lib/cart-sync";
+import { subscribeCart } from "@/lib/api";
+import { loadCartShared } from "@/lib/cart-api";
 import { getGuestCartCount } from "@/lib/cart-storage";
 import { useAuth } from "@/lib/auth-context";
-import type { Cart } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
@@ -21,23 +20,40 @@ const navLinks = [
 ];
 
 export function Header() {
-  const { user, isAuthenticated, logout, isLoading } = useAuth();
-  const [cartCount, setCartCount] = useState(0);
+  const { isAuthenticated, logout, isLoading } = useAuth();
+  const [cartCount, setCartCount] = useState(() => getGuestCartCount());
   const [mobileOpen, setMobileOpen] = useState(false);
+  const requestIdRef = useRef(0);
 
   useEffect(() => {
+    if (isLoading) {
+      // Keep last known / guest count while auth hydrates (no API yet).
+      return;
+    }
+
+    let cancelled = false;
+
     async function loadCart() {
+      const requestId = ++requestIdRef.current;
       try {
-        await syncGuestCartToServer(isAuthenticated);
-        const cart = await apiFetch<Cart>("/cart", { auth: isAuthenticated, authScope: "customer" });
-        setCartCount(cart.item_count);
+        const cart = await loadCartShared(isAuthenticated);
+        if (cancelled || requestId !== requestIdRef.current) return;
+        setCartCount(cart?.item_count ?? (isAuthenticated ? 0 : getGuestCartCount()));
       } catch {
+        if (cancelled || requestId !== requestIdRef.current) return;
         setCartCount(isAuthenticated ? 0 : getGuestCartCount());
       }
     }
+
     loadCart();
-    return subscribeCart(() => loadCart());
-  }, [isAuthenticated]);
+    const unsubscribe = subscribeCart(() => {
+      if (!cancelled) loadCart();
+    });
+    return () => {
+      cancelled = true;
+      unsubscribe();
+    };
+  }, [isAuthenticated, isLoading]);
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">

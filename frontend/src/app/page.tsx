@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ProductGrid } from "@/components/storefront/product-grid";
 import { Button } from "@/components/ui/button";
 import { buildQuery, serverFetch } from "@/lib/api";
+import { resolveImageUrl } from "@/lib/image-url";
 import type { Category, PaginatedResponse, ProductListItem } from "@/lib/types";
 
 async function getFeaturedProducts(): Promise<ProductListItem[]> {
@@ -82,12 +83,13 @@ export default async function Home() {
                 className="group flex flex-col items-center rounded-xl border border-border bg-card p-4 text-center transition-shadow hover:shadow-md"
               >
                 <div className="relative mb-3 size-16 overflow-hidden rounded-full bg-secondary/60">
-                  {category.image_url ? (
+                  {resolveImageUrl(category.image_url) ? (
                     <Image
-                      src={category.image_url}
+                      src={resolveImageUrl(category.image_url)!}
                       alt={category.name}
                       fill
                       className="object-cover transition-transform group-hover:scale-105"
+                      sizes="64px"
                     />
                   ) : (
                     <div className="flex h-full items-center justify-center text-xs text-muted-foreground">

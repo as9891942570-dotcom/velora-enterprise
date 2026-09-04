@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import { CartItemRow } from "@/components/cart/cart-item-row";
@@ -9,7 +8,7 @@ import { EmptyState } from "@/components/storefront/empty-state";
 import { LoadingSpinner } from "@/components/storefront/loading-spinner";
 import { ButtonLink } from "@/components/ui/button-link";
 import { apiFetch, notifyCartChanged } from "@/lib/api";
-import { syncGuestCartToServer } from "@/lib/cart-sync";
+import { loadCartShared } from "@/lib/cart-api";
 import { useAuth } from "@/lib/auth-context";
 import { formatINR } from "@/lib/format";
 import type { Cart } from "@/lib/types";
@@ -23,8 +22,7 @@ export default function CartPage() {
   const loadCart = useCallback(async () => {
     setLoading(true);
     try {
-      const synced = await syncGuestCartToServer(isAuthenticated);
-      const data = synced ?? (await apiFetch<Cart>("/cart", { auth: isAuthenticated }));
+      const data = await loadCartShared(isAuthenticated);
       setCart(data);
     } catch {
       setCart(null);
@@ -35,8 +33,24 @@ export default function CartPage() {
 
   useEffect(() => {
     if (authLoading) return;
-    loadCart();
-  }, [loadCart, authLoading]);
+    let cancelled = false;
+    (async () => {
+      await Promise.resolve();
+      if (cancelled) return;
+      setLoading(true);
+      try {
+        const data = await loadCartShared(isAuthenticated);
+        if (!cancelled) setCart(data);
+      } catch {
+        if (!cancelled) setCart(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, authLoading]);
 
   async function updateQuantity(itemId: string, quantity: number) {
     setUpdatingId(itemId);

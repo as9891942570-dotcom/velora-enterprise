@@ -63,7 +63,14 @@ export function ProductImageField({
 
       {displayUrl ? (
         <div className="relative mb-3 aspect-square max-w-xs overflow-hidden rounded-lg border border-border bg-secondary/30">
-          <Image src={displayUrl} alt="Product preview" fill className="object-cover" unoptimized />
+          <Image
+            src={displayUrl}
+            alt="Product preview"
+            fill
+            className="object-cover"
+            sizes="320px"
+            unoptimized={displayUrl.startsWith("blob:")}
+          />
         </div>
       ) : (
         <div className="mb-3 flex aspect-square max-w-xs items-center justify-center rounded-lg border border-dashed border-border bg-muted/30 text-sm text-muted-foreground">

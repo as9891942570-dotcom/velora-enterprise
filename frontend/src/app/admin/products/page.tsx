@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
@@ -8,6 +9,7 @@ import { LoadingSpinner } from "@/components/storefront/loading-spinner";
 import { Button } from "@/components/ui/button";
 import { apiFetch, buildQuery } from "@/lib/api";
 import { formatINR } from "@/lib/format";
+import { resolveImageUrl } from "@/lib/image-url";
 import type { PaginatedResponse, Product } from "@/lib/types";
 
 export default function AdminProductsPage() {
@@ -15,22 +17,24 @@ export default function AdminProductsPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadProducts();
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await apiFetch<PaginatedResponse<Product>>(
+          `/admin/products${buildQuery({ page_size: 100 })}`,
+          { auth: true },
+        );
+        if (!cancelled) setProducts(data.items);
+      } catch {
+        if (!cancelled) setProducts([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
-
-  async function loadProducts() {
-    try {
-      const data = await apiFetch<PaginatedResponse<Product>>(
-        `/admin/products${buildQuery({ page_size: 100 })}`,
-        { auth: true },
-      );
-      setProducts(data.items);
-    } catch {
-      setProducts([]);
-    } finally {
-      setLoading(false);
-    }
-  }
 
   async function handleDelete(id: string) {
     if (!confirm("Delete this product?")) return;
@@ -61,6 +65,7 @@ export default function AdminProductsPage() {
         <table className="w-full text-sm">
           <thead className="border-b border-border bg-secondary/40">
             <tr>
+              <th className="px-4 py-3 text-left font-medium">Image</th>
               <th className="px-4 py-3 text-left font-medium">Name</th>
               <th className="px-4 py-3 text-left font-medium">Price</th>
               <th className="px-4 py-3 text-left font-medium">Stock</th>
@@ -69,8 +74,27 @@ export default function AdminProductsPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-border">
-            {products.map((product) => (
+            {products.map((product) => {
+              const thumb = resolveImageUrl(product.images[0]?.url);
+              return (
               <tr key={product.id} className="bg-card">
+                <td className="px-4 py-3">
+                  <div className="relative size-12 overflow-hidden rounded-md bg-secondary/50">
+                    {thumb ? (
+                      <Image
+                        src={thumb}
+                        alt={product.name}
+                        fill
+                        className="object-cover"
+                        sizes="48px"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-[10px] text-muted-foreground">
+                        —
+                      </div>
+                    )}
+                  </div>
+                </td>
                 <td className="px-4 py-3">
                   <p className="font-medium">{product.name}</p>
                   <p className="text-xs text-muted-foreground">{product.slug}</p>
@@ -107,7 +131,8 @@ export default function AdminProductsPage() {
                   </div>
                 </td>
               </tr>
-            ))}
+              );
+            })}
           </tbody>
         </table>
       </div>

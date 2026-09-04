@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Search } from "lucide-react";
 
@@ -19,35 +19,64 @@ export default function ShopPageContent() {
   const [total, setTotal] = useState(0);
   const [pages, setPages] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState(searchParams.get("search") ?? "");
-  const [category, setCategory] = useState(searchParams.get("category") ?? "");
+
+  // URL is the source of truth for fetching — input is local until submit.
+  const appliedSearch = searchParams.get("search") ?? "";
+  const appliedCategory = searchParams.get("category") ?? "";
   const page = parseInt(searchParams.get("page") ?? "1", 10);
 
-  const fetchProducts = useCallback(async () => {
-    setLoading(true);
-    try {
-      const data = await apiFetch<PaginatedResponse<ProductListItem>>(
-        `/products${buildQuery({ search: search || undefined, category: category || undefined, page, page_size: 20 })}`,
-      );
-      setProducts(data.items);
-      setTotal(data.total);
-      setPages(data.pages);
-    } catch {
-      setProducts([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [search, category, page]);
+  const [searchInput, setSearchInput] = useState(appliedSearch);
+  const [searchSyncedFromUrl, setSearchSyncedFromUrl] = useState(appliedSearch);
+  if (appliedSearch !== searchSyncedFromUrl) {
+    setSearchSyncedFromUrl(appliedSearch);
+    setSearchInput(appliedSearch);
+  }
 
   useEffect(() => {
+    let cancelled = false;
     apiFetch<PaginatedResponse<Category>>(`/categories${buildQuery({ page_size: 50 })}`)
-      .then((data) => setCategories(data.items))
-      .catch(() => setCategories([]));
+      .then((data) => {
+        if (!cancelled) setCategories(data.items);
+      })
+      .catch(() => {
+        if (!cancelled) setCategories([]);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
+    let cancelled = false;
+
+    (async () => {
+      await Promise.resolve();
+      if (cancelled) return;
+      setLoading(true);
+      try {
+        const data = await apiFetch<PaginatedResponse<ProductListItem>>(
+          `/products${buildQuery({
+            search: appliedSearch || undefined,
+            category: appliedCategory || undefined,
+            page,
+            page_size: 20,
+          })}`,
+        );
+        if (cancelled) return;
+        setProducts(data.items);
+        setTotal(data.total);
+        setPages(data.pages);
+      } catch {
+        if (!cancelled) setProducts([]);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [appliedSearch, appliedCategory, page]);
 
   function updateParams(updates: Record<string, string>) {
     const params = new URLSearchParams(searchParams.toString());
@@ -60,7 +89,7 @@ export default function ShopPageContent() {
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
-    updateParams({ search, page: "1" });
+    updateParams({ search: searchInput.trim(), page: "1" });
   }
 
   return (
@@ -77,14 +106,14 @@ export default function ShopPageContent() {
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <input
             type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Search products..."
             className="h-9 w-full rounded-lg border border-input bg-background pl-10 pr-4 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           />
         </form>
         <select
-          value={category}
+          value={appliedCategory}
           onChange={(e) => updateParams({ category: e.target.value, page: "1" })}
           className="h-9 rounded-lg border border-input bg-background px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
         >

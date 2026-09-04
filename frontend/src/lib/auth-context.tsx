@@ -9,6 +9,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { usePathname } from "next/navigation";
 
 import { ApiRequestError, apiFetch, notifyCartChanged, refreshAccessToken, setAccessToken } from "@/lib/api";
 import { markAuthInitComplete, markAuthInitStart } from "@/lib/auth-gate";
@@ -54,7 +55,13 @@ async function tryRefresh(scope: AuthScope): Promise<string | null> {
   return token;
 }
 
-function useSession(scope: AuthScope, loginPath: string, logoutPath: string, options?: { registerPath?: boolean }) {
+function useSession(
+  scope: AuthScope,
+  loginPath: string,
+  logoutPath: string,
+  options?: { registerPath?: boolean; enabled?: boolean },
+) {
+  const enabled = options?.enabled ?? true;
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -64,10 +71,20 @@ function useSession(scope: AuthScope, loginPath: string, logoutPath: string, opt
   }, [scope]);
 
   useEffect(() => {
+    // Lazy admin: skip refresh on storefront so customer pages aren't blocked by admin auth.
+    if (!enabled) {
+      markAuthInitComplete(scope);
+      return;
+    }
+
     let cancelled = false;
 
     async function init() {
       markAuthInitStart(scope);
+      // Yield so setState is not synchronous in the effect body (React Compiler lint).
+      await Promise.resolve();
+      if (cancelled) return;
+      setIsLoading(true);
       clearLegacyAuthStorage();
       try {
         const token = await tryRefresh(scope);
@@ -104,7 +121,7 @@ function useSession(scope: AuthScope, loginPath: string, logoutPath: string, opt
       cancelled = true;
       markAuthInitComplete(scope);
     };
-  }, [scope, logoutPath]);
+  }, [scope, logoutPath, enabled]);
 
   const login = useCallback(
     async (email: string, password: string) => {
@@ -157,7 +174,7 @@ function useSession(scope: AuthScope, loginPath: string, logoutPath: string, opt
 
   return {
     user,
-    isLoading,
+    isLoading: enabled ? isLoading : false,
     isAuthenticated: !!user,
     login,
     register: options?.registerPath ? register : undefined,
@@ -167,8 +184,13 @@ function useSession(scope: AuthScope, loginPath: string, logoutPath: string, opt
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const pathname = usePathname();
+  const adminEnabled = pathname.startsWith("/admin");
+
   const customerBase = useSession("customer", "/auth/login", "/auth/logout", { registerPath: true });
-  const adminBase = useSession("admin", "/auth/admin/login", "/auth/admin/logout");
+  const adminBase = useSession("admin", "/auth/admin/login", "/auth/admin/logout", {
+    enabled: adminEnabled,
+  });
 
   const value = useMemo<AuthContextValue>(
     () => ({

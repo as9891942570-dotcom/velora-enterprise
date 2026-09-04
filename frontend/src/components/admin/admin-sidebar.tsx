@@ -62,7 +62,8 @@ export function AdminSidebar() {
     load();
     window.addEventListener(ADMIN_NOTIFICATIONS_CHANGED, load);
     return () => window.removeEventListener(ADMIN_NOTIFICATIONS_CHANGED, load);
-  }, [pathname]);
+    // Fetch on mount + after admin actions — not on every pathname change.
+  }, []);
 
   return (
     <aside className="flex w-full flex-col border-r border-border bg-card lg:w-64 lg:shrink-0">
