@@ -30,3 +30,26 @@ async def test_root_endpoint() -> None:
 
     assert response.status_code == 200
     assert response.json()["message"] == "Velora Enterprise API"
+
+
+@pytest.mark.asyncio
+async def test_root_endpoint_supports_head() -> None:
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        response = await client.head("/")
+
+    assert response.status_code == 200
+
+
+@pytest.mark.asyncio
+async def test_simple_health_endpoint() -> None:
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://test",
+    ) as client:
+        response = await client.get("/health")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "healthy"}

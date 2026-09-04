@@ -53,6 +53,11 @@ _uploads_dir = get_uploads_root()
 app.mount("/uploads", StaticFiles(directory=str(_uploads_dir)), name="uploads")
 
 
-@app.get("/")
+@app.api_route("/", methods=["GET", "HEAD"])
 async def root() -> dict[str, str]:
     return {"message": "Velora Enterprise API", "docs": "/docs"}
+
+
+@app.get("/health")
+async def health() -> dict[str, str]:
+    return {"status": "healthy"}
