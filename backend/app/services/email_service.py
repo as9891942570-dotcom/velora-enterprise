@@ -1,12 +1,11 @@
-"""Reusable email delivery for password resets and order notifications."""
+"""Reusable email delivery via Resend HTTP API (password resets + order notifications)."""
 
 from __future__ import annotations
 
 import logging
-import smtplib
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 from html import escape
+
+import resend
 
 from app.core.config import settings
 from app.models.order import Order
@@ -15,30 +14,32 @@ logger = logging.getLogger(__name__)
 
 
 def send_email(*, to_email: str, subject: str, text_body: str, html_body: str | None = None) -> bool:
-    """Send an email via SMTP. Returns True on success. Never raises to callers."""
-    if not settings.smtp_enabled:
-        logger.warning("SMTP not configured — skipping email to %s (%s)", to_email, subject)
+    """Send an email via Resend. Returns True on success. Never raises to callers."""
+    if not settings.email_enabled:
+        logger.warning(
+            "RESEND_API_KEY is not configured — skipping email to %s (%s)",
+            to_email,
+            subject,
+        )
         return False
 
     try:
-        message = MIMEMultipart("alternative")
-        message["Subject"] = subject
-        message["From"] = f"{settings.smtp_from_name} <{settings.effective_from_email}>"
-        message["To"] = to_email
-        message.attach(MIMEText(text_body, "plain", "utf-8"))
+        resend.api_key = settings.resend_api_key
+        params: dict = {
+            "from": settings.effective_from_email,
+            "to": [to_email],
+            "subject": subject,
+            "text": text_body,
+        }
         if html_body:
-            message.attach(MIMEText(html_body, "html", "utf-8"))
+            params["html"] = html_body
 
-        with smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=30) as server:
-            if settings.smtp_use_tls:
-                server.starttls()
-            if settings.smtp_username and settings.smtp_password:
-                server.login(settings.smtp_username, settings.smtp_password)
-            server.sendmail(settings.effective_from_email, [to_email], message.as_string())
-        logger.info("Email sent to %s subject=%s", to_email, subject)
+        result = resend.Emails.send(params)
+        email_id = result.get("id") if isinstance(result, dict) else getattr(result, "id", None)
+        logger.info("Email sent via Resend to %s subject=%s id=%s", to_email, subject, email_id)
         return True
     except Exception:
-        logger.exception("Failed to send email to %s subject=%s", to_email, subject)
+        logger.exception("Failed to send email via Resend to %s subject=%s", to_email, subject)
         return False
 
 

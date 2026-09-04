@@ -6,6 +6,7 @@ class Settings(BaseSettings):
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=False,
+        extra="ignore",  # allow leftover SMTP_* vars during Resend migration
     )
 
     app_name: str = "Velora Enterprise API"
@@ -17,14 +18,9 @@ class Settings(BaseSettings):
     support_email: str = "veloraenterprise2@gmail.com"
     admin_notification_email: str = "veloraenterprise2@gmail.com"
 
-    # SMTP (optional — emails skipped when not configured)
-    smtp_host: str = ""
-    smtp_port: int = 587
-    smtp_username: str = ""
-    smtp_password: str = ""
-    smtp_from_email: str = ""
-    smtp_from_name: str = "Velora Enterprise"
-    smtp_use_tls: bool = True
+    # Resend (HTTP email API — preferred on Render Free; SMTP ports are blocked)
+    resend_api_key: str = ""
+    email_from: str = "Velora Enterprise <onboarding@resend.dev>"
 
     # Password reset
     password_reset_expire_minutes: int = 60
@@ -68,12 +64,12 @@ class Settings(BaseSettings):
         return bool(self.cloudinary_cloud_name and self.cloudinary_api_key and self.cloudinary_api_secret)
 
     @property
-    def smtp_enabled(self) -> bool:
-        return bool(self.smtp_host and self.smtp_from_email)
+    def email_enabled(self) -> bool:
+        return bool(self.resend_api_key.strip())
 
     @property
     def effective_from_email(self) -> str:
-        return self.smtp_from_email or self.support_email
+        return (self.email_from or "").strip() or "Velora Enterprise <onboarding@resend.dev>"
 
 
 settings = Settings()
