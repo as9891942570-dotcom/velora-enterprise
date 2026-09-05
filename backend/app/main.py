@@ -14,12 +14,13 @@ app = FastAPI(
     debug=settings.debug,
     version="0.1.0",
 )
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3000",
+        "http://127.0.0.1:3000",
         "https://velora-enterprise.vercel.app",
+        "https://velora-enterprise-as9891942570-dotcoms-projects.vercel.app",
     ],
     allow_credentials=True,
     allow_methods=["*"],
