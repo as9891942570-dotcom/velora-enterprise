@@ -246,6 +246,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: adminBase.isAuthenticated,
         isAdmin: adminBase.user?.role === "admin",
         login: adminBase.login,
+        googleLogin: adminBase.googleLogin,
         logout: adminBase.logout,
         refreshUser: adminBase.refreshUser,
       },
