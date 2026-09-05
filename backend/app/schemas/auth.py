@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 from app.models.enums import UserRole
 
 
+
 class RegisterRequest(BaseModel):
     name: str = Field(min_length=1, max_length=255)
     email: EmailStr
@@ -16,6 +17,8 @@ class LoginRequest(BaseModel):
     email: EmailStr
     password: str
 
+class GoogleLoginRequest(BaseModel):
+    google_token: str
 
 class ForgotPasswordRequest(BaseModel):
     email: EmailStr

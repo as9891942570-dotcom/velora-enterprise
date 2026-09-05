@@ -22,6 +22,7 @@ interface SessionContextValue {
   isLoading: boolean;
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<User>;
+  googleLogin: (googleToken: string) => Promise<User>;
   register?: (name: string, email: string, password: string) => Promise<User>;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -122,7 +123,6 @@ function useSession(
       markAuthInitComplete(scope);
     };
   }, [scope, logoutPath, enabled]);
-
   const login = useCallback(
     async (email: string, password: string) => {
       const data = await apiFetch<TokenResponse>(loginPath, {
@@ -130,17 +130,52 @@ function useSession(
         body: { email, password },
         authScope: scope,
       });
+
       setAccessToken(data.access_token, scope);
+
       if (scope === "customer") {
         await mergeGuestCartAfterAuth();
         notifyCartChanged();
       }
+
       const me = await fetchMe(scope);
-      if (!me) throw new Error("Login failed");
+
+      if (!me) {
+        throw new Error("Login failed");
+      }
+
       setUser(me);
       return me;
     },
     [loginPath, scope],
+  );
+  const googleLogin = useCallback(
+    async (googleToken: string) => {
+      if (scope !== "customer") {
+        throw new Error("Google login is customer-only");
+      }
+
+      const data = await apiFetch<TokenResponse>("/auth/google", {
+        method: "POST",
+        body: { google_token: googleToken },
+        authScope: "customer",
+      });
+
+      setAccessToken(data.access_token, "customer");
+
+      await mergeGuestCartAfterAuth();
+      notifyCartChanged();
+
+      const me = await fetchMe("customer");
+
+      if (!me) {
+        throw new Error("Google login failed");
+      }
+
+      setUser(me);
+      return me;
+    },
+    [scope],
   );
 
   const register = useCallback(
@@ -177,6 +212,7 @@ function useSession(
     isLoading: enabled ? isLoading : false,
     isAuthenticated: !!user,
     login,
+    googleLogin,
     register: options?.registerPath ? register : undefined,
     logout,
     refreshUser,
@@ -199,6 +235,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading: customerBase.isLoading,
         isAuthenticated: customerBase.isAuthenticated,
         login: customerBase.login,
+        googleLogin: customerBase.googleLogin,
         register: customerBase.register!,
         logout: customerBase.logout,
         refreshUser: customerBase.refreshUser,

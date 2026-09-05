@@ -46,6 +46,12 @@ class Settings(BaseSettings):
     razorpay_key_secret: str = ""
     razorpay_webhook_secret: str = ""
 
+
+    # Google OAuth2 (optional)
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    
+
     # Cloudinary (optional)
     cloudinary_cloud_name: str = ""
     cloudinary_api_key: str = ""
